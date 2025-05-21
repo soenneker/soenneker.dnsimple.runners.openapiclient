@@ -9,7 +9,7 @@ using Soenneker.Extensions.LoggerConfiguration;
 
 namespace Soenneker.DNSimple.Runners.OpenApiClient;
 
-public class Program
+public sealed class Program
 {
     private static string? _environment;
 

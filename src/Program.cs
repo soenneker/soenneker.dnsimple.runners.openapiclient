@@ -56,6 +56,7 @@ public sealed class Program
         IHostBuilder? host = Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((hostingContext, builder) =>
             {
+                builder.AddEnvironmentVariables();
                 builder.SetBasePath(hostingContext.HostingEnvironment.ContentRootPath);
 
                 builder.Build();

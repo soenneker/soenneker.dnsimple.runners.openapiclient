@@ -22,8 +22,7 @@ public static class Startup
         services.AddHostedService<ConsoleHostedService>()
                 .AddScoped<IFileOperationsUtil, FileOperationsUtil>()
                 .AddRunnersManagerAsScoped()
-                .AddFileDownloadUtilAsScoped()
-                .AddScoped<IOpenApiFixer, OpenApiFixer>();
+                .AddFileDownloadUtilAsScoped();
 
         return services;
     }

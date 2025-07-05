@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.File.Abstract;
 using Soenneker.Utils.File.Download.Abstract;
-using Soenneker.Utils.FileSync.Abstract;
 
 namespace Soenneker.DNSimple.Runners.OpenApiClient.Utils;
 
@@ -25,31 +24,30 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
     private readonly IDotnetUtil _dotnetUtil;
     private readonly IProcessUtil _processUtil;
     private readonly IFileDownloadUtil _fileDownloadUtil;
-    private readonly IFileUtilSync _fileUtilSync;
     private readonly IFileUtil _fileUtil;
 
     public FileOperationsUtil(ILogger<FileOperationsUtil> logger, IGitUtil gitUtil, IDotnetUtil dotnetUtil, IProcessUtil processUtil,
-        IOpenApiFixer openApiFixer, IFileDownloadUtil fileDownloadUtil, IFileUtilSync fileUtilSync, IFileUtil fileUtil)
+        IFileDownloadUtil fileDownloadUtil, IFileUtil fileUtil)
     {
         _logger = logger;
         _gitUtil = gitUtil;
         _dotnetUtil = dotnetUtil;
         _processUtil = processUtil;
         _fileDownloadUtil = fileDownloadUtil;
-        _fileUtilSync = fileUtilSync;
         _fileUtil = fileUtil;
     }
 
     public async ValueTask Process(CancellationToken cancellationToken = default)
     {
-        string gitDirectory = await _gitUtil.CloneToTempDirectory($"https://github.com/soenneker/{Constants.Library.ToLowerInvariantFast()}", cancellationToken: cancellationToken);
+        string gitDirectory = await _gitUtil.CloneToTempDirectory($"https://github.com/soenneker/{Constants.Library.ToLowerInvariantFast()}",
+            cancellationToken: cancellationToken);
 
         string targetFilePath = Path.Combine(gitDirectory, "openapi.json");
 
-        _fileUtilSync.DeleteIfExists(targetFilePath);
+        await _fileUtil.DeleteIfExists(targetFilePath, cancellationToken: cancellationToken);
 
-        string? filePath = await _fileDownloadUtil.Download("https://developer.dnsimple.com/v2/openapi.json",
-            targetFilePath, fileExtension: ".json", cancellationToken: cancellationToken);
+        string? filePath = await _fileDownloadUtil.Download("https://developer.dnsimple.com/v2/openapi.json", targetFilePath, fileExtension: ".json",
+            cancellationToken: cancellationToken);
 
         await _processUtil.Start("dotnet", null, "tool update --global Microsoft.OpenApi.Kiota", waitForExit: true, cancellationToken: cancellationToken);
 
@@ -58,7 +56,8 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
         DeleteAllExceptCsproj(srcDirectory);
 
         await _processUtil.Start("kiota", gitDirectory, $"kiota generate -l CSharp -d \"{filePath}\" -o src -c DNSimpleOpenApiClient -n {Constants.Library}",
-            waitForExit: true, cancellationToken: cancellationToken).NoSync();
+                              waitForExit: true, cancellationToken: cancellationToken)
+                          .NoSync();
 
         await BuildAndPush(gitDirectory, cancellationToken).NoSync();
     }
